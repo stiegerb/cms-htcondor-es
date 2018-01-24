@@ -90,7 +90,7 @@ class ElasticInterface(object):
     """Interface to elasticsearch"""
     def __init__(self, hostname="es-cms.cern.ch", port=9203):
         domain = socket.getfqdn().split(".", 1)[-1]
-        if domain == 'cern.ch':
+        if os.path.isfile("es.conf"):
             passwd = ''
             username = ''
             regex = re.compile("^([A-Za-z]+):\s(.*)")
@@ -106,7 +106,7 @@ class ElasticInterface(object):
                                                         "http_auth":username+":"+passwd}],
                                                         verify_certs=True,
                                                         use_ssl=True,
-                                                        ca_certs='/etc/pki/tls/certs/ca-bundle.trust.crt')
+                                                        ca_certs='/etc/pki/tls/certs/ca-bundle.trust.crt') # FIXME: outdated on hcc-metrics
         else:
             self.handle = elasticsearch.Elasticsearch()
 
