@@ -542,7 +542,7 @@ def convert_to_json(ad, cms=True, return_dict=False, reduce_data=False):
                 if value == "Unknown":
                     value = None
                 else:
-                    logging.warning("Failed to convert key %s with value %s to int" % (key, repr(value)))
+                    logging.info("Failed to convert key %s with value %s to int" % (key, repr(value)))
                     value = str(value)
         elif key in string_vals:
             value = str(value)
