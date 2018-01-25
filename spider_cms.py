@@ -398,8 +398,9 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
         queue.put(schedd_ad['Name'])
         had_error = False
 
-    except RuntimeError:
-        logging.warning("Failed to query schedd for job queue: %s" % schedd_ad["Name"])
+    except RuntimeError, e:
+        logging.warning("Failed to query schedd %s for job queue: %s" %
+                       (schedd_ad["Name"], str(e)))
 
     except Exception, e:
         message = ("Failure when processing schedd queue query on %s: %s" % 
@@ -628,7 +629,7 @@ class ListenAndBunch(multiprocessing.Process):
             self.output_queue.put(self.buffer)
             self.buffer = []
 
-        logging.info("Closing listener, received %d documents total" % self.count_in)
+        logging.warning("Closing listener, received %d documents total" % self.count_in)
         self.output_queue.put(None) # send back a poison pill
         self.output_queue.put(self.count_in) # send the number of total docs
 
@@ -726,7 +727,7 @@ def process_queues(schedd_ads, starttime, pool, args):
 
     def _callback_amq(result):
         sent, received = result
-        logging.info("Uploaded %d/%d docs to StompAMQ" % (sent, received, service))
+        logging.info("Uploaded %d/%d docs to StompAMQ" % (sent, received))
 
     total_processed = 0
     while True:
