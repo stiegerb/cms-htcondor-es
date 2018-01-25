@@ -395,7 +395,6 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
                                  message)
                 break
 
-        queue.put(schedd_ad['Name'])
         had_error = False
 
     except RuntimeError, e:
@@ -410,6 +409,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
                          message)
         traceback.print_exc()
 
+    queue.put(schedd_ad['Name'])
     total_time = (time.time() - my_start)/60.
     logging.warning(("Schedd %-25s queue: response count: %5d; "
                      "query time %.2f min; ") % (
@@ -517,7 +517,7 @@ def process_schedd(starttime, last_completion, schedd_ad, args):
                                                     id_, dict_ad in ad_list])
                 if args.feed_amq:
                     data_for_amq = [(id_, convert_dates_to_millisecs(dict_ad)) for id_, dict_ad in ad_list]
-                    htcondor_es.amq.post_ads(amq, data_for_amq)# FIXME
+                    htcondor_es.amq.post_ads(data_for_amq)
 
 
     total_time = (time.time() - my_start) / 60.
