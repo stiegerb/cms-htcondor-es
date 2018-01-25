@@ -711,6 +711,11 @@ def process_histories(schedd_ads, starttime, pool, args):
 
 def process_queues(schedd_ads, starttime, pool, args):
     my_start = time.time()
+    time_remaining = TIMEOUT_MINS*60+10 - (my_start - starttime)
+    if time_remaining < 0:
+        logging.warning("No time remaining to process queues")
+        return
+
     mp_manager = multiprocessing.Manager()
     input_queue = mp_manager.Queue()
     output_queue = mp_manager.Queue()
