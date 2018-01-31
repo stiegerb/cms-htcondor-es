@@ -18,6 +18,9 @@ string_vals = set([ \
   "CMSPrimaryPrimaryDataset",
   "CMSPrimaryProcessedDataset",
   "CMSPrimaryDataTier",
+  "CMSSWVersion",
+  "CMSSWMajorVersion",
+  "CMSSWReleaseSeries",
   "CRAB_JobType",
   "CRAB_JobSW",
   "CRAB_JobArch",
@@ -419,6 +422,9 @@ running_fields = set([
   "CMSPrimaryDataTier",
   "CMSSWKLumis",
   "CMSSWWallHrs",
+  "CMSSWVersion",
+  "CMSSWMajorVersion",
+  "CMSSWReleaseSeries",
   "CommittedCoreHr",
   "CoreHr",
   "Country",
@@ -822,15 +828,15 @@ def convert_to_json(ad, cms=True, return_dict=False, reduce_data=False):
 
     # Parse CRAB3 information on CMSSW version
     result['CMSSWVersion'] = 'Unknown'
-    result['CMSSWSubVersion'] = 'Unknown'
-    result['CMSSWSubSubVersion'] = 'Unknown'
+    result['CMSSWMajorVersion'] = 'Unknown'
+    result['CMSSWReleaseSeries'] = 'Unknown'
     if 'CRAB_JobSW' in result:
         match = _cmssw_version.match(result['CRAB_JobSW'])
         if match:
             result['CMSSWVersion'] = match.group(1)
             subv, ssubv = int(match.group(2)), int(match.group(3))
-            result['CMSSWSubVersion'] = '%d_X_X' % (subv)
-            result['CMSSWSubSubVersion'] = '%d_%d_X' % (subv, ssubv)
+            result['CMSSWMajorVersion'] = '%d_X_X' % (subv)
+            result['CMSSWReleaseSeries'] = '%d_%d_X' % (subv, ssubv)
 
     # Parse new machine statistics.
     try:
