@@ -358,8 +358,14 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
     try:
         query_iter = schedd.xquery() if not args.dry_run else []
         for job_ad in query_iter:
-            dict_ad = convert_to_json(job_ad, return_dict=True,
-                                      reduce_data=args.reduce_running_data)
+            try:
+                dict_ad = convert_to_json(job_ad, return_dict=True,
+                                          reduce_data=args.reduce_running_data)
+            except Exception as e:
+                logging.warning("Failure when converting document on %s: %s" %
+                                (schedd_ad["Name"], str(e)))
+                continue
+
             if not dict_ad:
                 continue
 
@@ -458,7 +464,11 @@ def process_schedd(starttime, last_completion, schedd_ad, args):
             history_iter = []
 
         for job_ad in history_iter:
-            dict_ad = convert_to_json(job_ad, return_dict=True)
+            try:
+                dict_ad = convert_to_json(job_ad, return_dict=True)
+            except Exception as e:
+                logging.warning("Failure when converting document on %s: %s" %
+                                (schedd_ad["Name"], str(e)))
 
             if not dict_ad:
                 continue
