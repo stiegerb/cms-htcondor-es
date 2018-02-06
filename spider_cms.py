@@ -355,16 +355,23 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
 
     schedd = htcondor.Schedd(schedd_ad)
     had_error = True
+    sent_warnings = False
     try:
         query_iter = schedd.xquery() if not args.dry_run else []
         for job_ad in query_iter:
+            dict_ad = None
             try:
                 dict_ad = convert_to_json(job_ad, return_dict=True,
                                           reduce_data=args.reduce_running_data)
             except Exception as e:
-                logging.warning("Failure when converting document on %s: %s" %
+                message = ("Failure when converting document on %s queue: %s" %
                                 (schedd_ad["Name"], str(e)))
-                continue
+                logging.warning(message)
+                if not sent_warnings:
+                    send_email_alert(args.email_alerts,
+                                     "spider_cms queue document conversion error",
+                                     message)
+                    sent_warnings = True
 
             if not dict_ad:
                 continue
@@ -452,6 +459,7 @@ def process_schedd(starttime, last_completion, schedd_ad, args):
     buffered_ads = {}
     count = 0
     total_upload = 0
+    sent_warnings = False
     if not args.read_only:
         if args.feed_es:
             es = htcondor_es.es.get_server_handle(args) # es-cms.cern.ch now
@@ -464,11 +472,18 @@ def process_schedd(starttime, last_completion, schedd_ad, args):
             history_iter = []
 
         for job_ad in history_iter:
+            dict_ad = None
             try:
                 dict_ad = convert_to_json(job_ad, return_dict=True)
             except Exception as e:
-                logging.warning("Failure when converting document on %s: %s" %
+                message = ("Failure when converting document on %s history: %s" %
                                 (schedd_ad["Name"], str(e)))
+                logging.warning(message)
+                if not sent_warnings:
+                    send_email_alert(args.email_alerts,
+                                     "spider_cms history document conversion error",
+                                     message)
+                    sent_warnings = True
 
             if not dict_ad:
                 continue
@@ -512,7 +527,7 @@ def process_schedd(starttime, last_completion, schedd_ad, args):
     except Exception, e:
         message = ("Failure when processing schedd history query on %s: %s" % 
                        (schedd_ad["Name"], str(e)))
-        logging.error(message)
+        logging.exception(message)
         send_email_alert(args.email_alerts, "spider_cms schedd history query error",
                          message)
 
@@ -639,10 +654,9 @@ class ListenAndBunch(multiprocessing.Process):
             self.output_queue.put(self.buffer)
             self.buffer = []
 
-        logging.warning("Closing listener, received %d documents total" % self.count_in)
+        logging.info("Closing listener, received %d documents total" % self.count_in)
         self.output_queue.put(None) # send back a poison pill
         self.output_queue.put(self.count_in) # send the number of total docs
-
 
 def process_histories(schedd_ads, starttime, pool, args):
     try:
