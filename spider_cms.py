@@ -40,9 +40,9 @@ except ImportError:
 now = time.time()
 now_ns = int(time.time())*int(1e9)
 
-def time_remaining(starttime, timeout=TIMEOUT_MINS*60)
+def time_remaining(starttime, timeout=TIMEOUT_MINS*60):
     """
-    Return the remaining time (in seconds) until starttime + TIMEOUT_MINS
+    Return the remaining time (in seconds) until starttime + timeout
     """
     elapsed = time.time() - starttime
     return timeout - elapsed
@@ -661,7 +661,7 @@ class ListenAndBunch(multiprocessing.Process):
             self.output_queue.put(self.buffer)
             self.buffer = []
 
-        logging.info("Closing listener, received %d documents total" % self.count_in)
+        logging.warning("Closing listener, received %d documents total" % self.count_in)
         self.output_queue.put(None) # send back a poison pill
         self.output_queue.put(self.count_in) # send the number of total docs
 
@@ -766,6 +766,11 @@ def process_queues(schedd_ads, starttime, pool, args):
     total_processed = 0
     while True:
         if args.read_only:
+            break
+
+        if time_remaining(starttime) < 0:
+            logging.warning("Listener did not shut down properly; terminating.")
+            listener.terminate()
             break
 
         bunch = output_queue.get()
