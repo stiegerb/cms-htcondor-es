@@ -40,6 +40,13 @@ except ImportError:
 now = time.time()
 now_ns = int(time.time())*int(1e9)
 
+def time_remaining(starttime, timeout=TIMEOUT_MINS*60)
+    """
+    Return the remaining time (in seconds) until starttime + TIMEOUT_MINS
+    """
+    elapsed = time.time() - starttime
+    return timeout - elapsed
+
 def send_email_alert(recipients, subject, message):
     if not recipients:
         return
@@ -132,7 +139,7 @@ def clean_old_jobs(starttime, name, es):
         except Exception, e:
             print "Failure when updating stale documents:", str(e)
             raise
-        if time.time()-starttime > TIMEOUT_MINS*60:
+        if time_remaining(starttime) < 0:
             print "Out of time for cleanup; exiting."
             break
 
@@ -332,7 +339,7 @@ def process_collector(args):
 def process_schedd_queue(starttime, schedd_ad, queue, args):
     my_start = time.time()
     logging.info("Querying %s queue for jobs." % schedd_ad["Name"])
-    if time.time() - starttime > TIMEOUT_MINS*60:
+    if time_remaining(starttime) < 0:
         message = ("No time remaining to run queue crawler on %s; "
                    "exiting." % schedd_ad['Name'] )
         logging.error(message)
@@ -398,7 +405,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
 
             count += 1
 
-            if time.time() - starttime > TIMEOUT_MINS*60:
+            if time_remaining(starttime) < 0:
                 message = ("Queue crawler on %s has been running for "
                            "more than %d minutes; exiting" %
                                (schedd_ad['Name'], TIMEOUT_MINS))
@@ -442,7 +449,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
 
 def process_schedd(starttime, last_completion, schedd_ad, args):
     my_start = time.time()
-    if time.time() - starttime > TIMEOUT_MINS*60:
+    if time_remaining(starttime) < 0:
         message = ("No time remaining to process %s history; exiting." % 
                        schedd_ad['Name'])
         logging.error(message)
@@ -511,7 +518,7 @@ def process_schedd(starttime, last_completion, schedd_ad, args):
             job_completion = job_ad.get("EnteredCurrentStatus")
             if job_completion > last_completion:
                 last_completion = job_completion
-            if time.time() - starttime > TIMEOUT_MINS*60:
+            if time_remaining(starttime) < 0:
                 message = ("History crawler on %s has been running for "
                            "more than %d minutes; exiting." % (schedd_ad["Name"], TIMEOUT_MINS))
                 logging.error(message)
@@ -692,10 +699,9 @@ def process_histories(schedd_ads, starttime, pool, args):
     # completion checkpoint in case
     timed_out = False
     for name, future in futures:
-        time_remaining = TIMEOUT_MINS*60+10 - (time.time() - starttime)
-        if time_remaining > 0:
+        if time_remaining(starttime) > -10:
             try:
-                last_completion = future.get(time_remaining)
+                last_completion = future.get(time_remaining(starttime)+10)
                 if name:
                     checkpoint[name] = last_completion
 
@@ -735,8 +741,7 @@ def process_histories(schedd_ads, starttime, pool, args):
 
 def process_queues(schedd_ads, starttime, pool, args):
     my_start = time.time()
-    time_remaining = TIMEOUT_MINS*60+10 - (my_start - starttime)
-    if time_remaining < 0:
+    if time_remaining(starttime) < 0:
         logging.warning("No time remaining to process queues")
         return
 
@@ -793,10 +798,9 @@ def process_queues(schedd_ads, starttime, pool, args):
     total_sent = 0
     total_queried = 0
     for name, future in futures:
-        time_remaining = TIMEOUT_MINS*60+10 - (time.time() - starttime)
-        if time_remaining > 0:
+        if time_remaining(starttime) > -10:
             try:
-                count = future.get(time_remaining)
+                count = future.get(time_remaining(starttime)+10)
                 if name == "UPLOADER_AMQ":
                     total_sent += count[0]
                 elif name == "UPLOADER_ES":
