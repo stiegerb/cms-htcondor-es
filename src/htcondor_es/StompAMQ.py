@@ -21,31 +21,31 @@ class StompyListener(object):
         self.logr = logging.getLogger(__name__)
 
     def on_connecting(self, host_and_port):
-        self.logr.info('on_connecting %s', str(host_and_port))
+        self.logr.debug('on_connecting %s', str(host_and_port))
 
     def on_error(self, headers, message):
-        self.logr.info('received an error %s %s', str(headers), str(message))
+        self.logr.debug('received an error %s %s', str(headers), str(message))
 
     def on_message(self, headers, body):
-        self.logr.info('on_message %s %s', str(headers), str(body))
+        self.logr.debug('on_message %s %s', str(headers), str(body))
 
     def on_heartbeat(self):
-        self.logr.info('on_heartbeat')
+        self.logr.debug('on_heartbeat')
 
     def on_send(self, frame):
-        self.logr.info('on_send HEADERS: %s, BODY: %s ...', str(frame.headers), str(frame.body)[:160])
+        self.logr.debug('on_send HEADERS: %s, BODY: %s ...', str(frame.headers), str(frame.body)[:160])
 
     def on_connected(self, headers, body):
-        self.logr.info('on_connected %s %s', str(headers), str(body))
+        self.logr.debug('on_connected %s %s', str(headers), str(body))
 
     def on_disconnected(self):
-        self.logr.info('on_disconnected')
+        self.logr.debug('on_disconnected')
 
     def on_heartbeat_timeout(self):
-        self.logr.info('on_heartbeat_timeout')
+        self.logr.debug('on_heartbeat_timeout')
 
     def on_before_message(self, headers, body):
-        self.logr.info('on_before_message %s %s', str(headers), str(body))
+        self.logr.debug('on_before_message %s %s', str(headers), str(body))
 
         return (headers, body)
 
