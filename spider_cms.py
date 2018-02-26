@@ -633,12 +633,16 @@ class ListenAndBunch(multiprocessing.Process):
             if isinstance(next_doc, basestring):
                 schedd_name = str(next_doc)
                 try:
+                    # We were already processing this sender,
+                    # this is the signal that it's done sending.
                     self.tracker.remove(schedd_name)
                     self.n_processed += 1
                 except ValueError:
+                    # This is a new sender
                     self.tracker.append(schedd_name)
     
                 if self.n_processed == self.n_expected:
+                    # We finished processing all expected senders.
                     assert(len(self.tracker) == 0)
                     self.close()
                     return
