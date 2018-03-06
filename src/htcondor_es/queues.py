@@ -53,7 +53,7 @@ class ListenAndBunch(multiprocessing.Process):
     def run(self):
         since_last_report = 0
         while True:
-            next_batch = self.input_queue.get(timeout=time_remaining(self.starttime))
+            next_batch = self.input_queue.get(timeout=time_remaining(self.starttime, positive=True))
 
             if isinstance(next_batch, basestring):
                 schedd_name = str(next_batch)
@@ -84,20 +84,20 @@ class ListenAndBunch(multiprocessing.Process):
             # If buffer is full, send the docs and clear the buffer
             if len(self.buffer) >= self.bunch_size:
                 self.output_queue.put(self.buffer[:self.bunch_size],
-                                      timeout=time_remaining(self.starttime))
+                                      timeout=time_remaining(self.starttime, positive=True))
                 self.buffer = self.buffer[self.bunch_size:]
 
     def close(self):
         """Clear the buffer, send a poison pill and the total number of docs"""
         if self.buffer:
-            self.output_queue.put(self.buffer, timeout=time_remaining(self.starttime))
+            self.output_queue.put(self.buffer, timeout=time_remaining(self.starttime, positive=True))
             self.buffer = []
 
         logging.warning("Closing listener, received %d documents total", self.count_in)
         # send back a poison pill
-        self.output_queue.put(None, timeout=time_remaining(self.starttime))
+        self.output_queue.put(None, timeout=time_remaining(self.starttime, positive=True))
         # send the number of total docs
-        self.output_queue.put(self.count_in, timeout=time_remaining(self.starttime))
+        self.output_queue.put(self.count_in, timeout=time_remaining(self.starttime, positive=True))
 
 
 def process_schedd_queue(starttime, schedd_ad, queue, args):
@@ -115,7 +115,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
     count_since_last_report = 0
     count = 0
     cpu_usage = resource.getrusage(resource.RUSAGE_SELF).ru_utime
-    queue.put(schedd_ad['Name'], timeout=time_remaining(starttime))
+    queue.put(schedd_ad['Name'], timeout=time_remaining(starttime, positive=True))
 
     schedd = htcondor.Schedd(schedd_ad)
     sent_warnings = False
@@ -154,7 +154,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
                                      "spider_cms queue timeout warning",
                                      message)
                     break
-                queue.put(batch, timeout=time_remaining(starttime))
+                queue.put(batch, timeout=time_remaining(starttime, positive=True))
                 batch = []
                 if count_since_last_report >= 1000:
                     cpu_usage_now = resource.getrusage(resource.RUSAGE_SELF).ru_utime
@@ -167,7 +167,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
                     count_since_last_report = 0
 
         if batch:  # send remaining docs
-            queue.put(batch, timeout=time_remaining(starttime))
+            queue.put(batch, timeout=time_remaining(starttime, positive=True))
             batch = []
 
     except RuntimeError, e:
@@ -181,7 +181,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
                          message)
         traceback.print_exc()
 
-    queue.put(schedd_ad['Name'], timeout=time_remaining(starttime))
+    queue.put(schedd_ad['Name'], timeout=time_remaining(starttime, positive=True))
     total_time = (time.time() - my_start)/60.
     logging.warning("Schedd %-25s queue: response count: %5d; "
                     "query time %.2f min; ",
@@ -230,9 +230,9 @@ def process_queues(schedd_ads, starttime, pool, args):
             listener.terminate()
             break
 
-        bunch = output_queue.get(timeout=time_remaining(starttime))
+        bunch = output_queue.get(timeout=time_remaining(starttime, positive=True))
         if bunch is None: # swallow the poison pill
-            total_processed = int(output_queue.get(timeout=time_remaining(starttime)))
+            total_processed = int(output_queue.get(timeout=time_remaining(starttime, positive=True)))
             break
 
         if args.feed_amq and not args.read_only:
@@ -270,7 +270,7 @@ def process_queues(schedd_ads, starttime, pool, args):
     for name, future in futures:
         if time_remaining(starttime) > -10:
             try:
-                count = future.get(time_remaining(starttime)+10)
+                count = future.get(time_remaining(starttime, positive=True)+10)
                 if name == "UPLOADER_AMQ":
                     total_sent += count[0]
                     total_upload_time += count[2]
