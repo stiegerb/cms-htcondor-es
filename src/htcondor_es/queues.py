@@ -253,20 +253,13 @@ def process_queues(schedd_ads, starttime, pool, args):
                                              args=(idx, es_bunch, args))
             futures.append(("UPLOADER_ES", future))
 
-        max_in_progress = 3
-        count = len(futures)
-        while count > max_in_progress:
+        # Limit the number of concurrent upload processes
+        while len([f for f in futures if not f[1].ready()]) > upload_pool._processes:
             if time_remaining(starttime) < 0:
                 break
-            for future in futures:
-                if future[1].ready():
-                    count -= 1
-            if count > max_in_progress:
-                break
-            for future in futures:
-                future.wait(time_remaining(starttime) + 10)
-                break
-            count = len(futures)
+
+            # Wait a short time before counting again
+            time.sleep(1)
 
     listener.join()
 
