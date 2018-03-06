@@ -200,8 +200,8 @@ def process_queues(schedd_ads, starttime, pool, args):
         return
 
     mp_manager = multiprocessing.Manager()
-    input_queue = mp_manager.Queue(maxsize=10)
-    output_queue = mp_manager.Queue(maxsize=2)
+    input_queue = mp_manager.Queue()
+    output_queue = mp_manager.Queue()
     listener = ListenAndBunch(input_queue=input_queue,
                               output_queue=output_queue,
                               n_expected=len(schedd_ads),
@@ -252,14 +252,6 @@ def process_queues(schedd_ads, starttime, pool, args):
             future = upload_pool.apply_async(htcondor_es.es.post_ads_nohandle,
                                              args=(idx, es_bunch, args))
             futures.append(("UPLOADER_ES", future))
-
-        # Limit the number of concurrent upload processes
-        while len([f for f in futures if not f[1].ready()]) > args.upload_pool_size:
-            if time_remaining(starttime) < 0:
-                break
-
-            # Wait a short time before counting again
-            time.sleep(1)
 
     listener.join()
 
