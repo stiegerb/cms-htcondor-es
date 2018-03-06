@@ -241,6 +241,7 @@ def process_queues(schedd_ads, starttime, pool, args):
                                              args=(amq_bunch,),
                                              callback=_callback_amq)
             futures.append(("UPLOADER_AMQ", future))
+            logging.info("Starting AMQ uploader, %d items in queue" % output_queue.qsize())
 
         if args.feed_es_for_queues and not args.read_only:
             es_bunch = [(id_, json.dumps(dict_ad)) for id_, dict_ad in bunch]
@@ -252,6 +253,14 @@ def process_queues(schedd_ads, starttime, pool, args):
             future = upload_pool.apply_async(htcondor_es.es.post_ads_nohandle,
                                              args=(idx, es_bunch, args))
             futures.append(("UPLOADER_ES", future))
+
+        # Limit the number of concurrent upload processes
+        while len([f for f in futures if f[0].startswith('UPLOADER') and not f[1].ready()]) >= args.upload_pool_size:
+            if time_remaining(starttime) < 0:
+                break
+
+            # Wait a short time before counting again
+            time.sleep(1)
 
     listener.join()
 
