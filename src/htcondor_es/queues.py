@@ -161,7 +161,7 @@ def process_schedd_queue(starttime, schedd_ad, queue, args):
                     cpu_usage = cpu_usage_now - cpu_usage
                     processing_rate = count_since_last_report / cpu_usage
                     cpu_usage = cpu_usage_now
-                    logging.info("Processor for %s has processed %d jobs "
+                    logging.debug("Processor for %s has processed %d jobs "
                                  "(%.1f jobs per CPU-second)",
                                  schedd_ad['Name'], count, processing_rate)
                     count_since_last_report = 0
