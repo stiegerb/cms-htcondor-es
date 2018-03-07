@@ -269,7 +269,7 @@ def process_queues(schedd_ads, starttime, pool, args):
     total_upload_time = 0
     total_queried = 0
     for name, future in futures:
-        if time_remaining(starttime) > -10:
+        if time_remaining(starttime) > -20:
             try:
                 count = future.get(time_remaining(starttime, positive=True)+10)
                 if name == "UPLOADER_AMQ":
@@ -290,6 +290,7 @@ def process_queues(schedd_ads, starttime, pool, args):
             break
 
     if timed_out:
+        logging.error("Timed out when retrieving uploaders. Upload count incomplete.")
         pool.terminate()
         upload_pool.terminate()
 
