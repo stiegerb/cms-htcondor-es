@@ -535,11 +535,11 @@ def convert_to_json(ad, cms=True, return_dict=False, reduce_data=False):
         return None
     result = {}
 
-    result['DataCollection'] = ad.get('DataCollection', _launch_time)
+    result['DataCollection'] = ad.get('CompletionDate', _launch_time)
     result['RecordTime'] = _launch_time
     # Keep RecordTime as _launch_time for unfinished jobs
-    if ad['JobStatus'] in [3, 4, 6] and 'DataCollection' in ad:
-        result['RecordTime'] = ad['DataCollection']
+    if ad['JobStatus'] in [3, 4, 6] and 'CompletionDate' in ad:
+        result['RecordTime'] = ad['CompletionDate']
 
     result['DataCollectionDate'] = result['RecordTime']
 
