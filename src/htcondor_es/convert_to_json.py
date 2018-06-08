@@ -187,8 +187,6 @@ date_vals = set([ \
   "LastMatchTime",
   "LastSuspensionTime",
   "LastVacateTime_RAW",
-  "MATCH_GLIDEIN_ToDie",
-  "MATCH_GLIDEIN_ToRetire",
   "QDate",
   "ShadowBday",
   "StageInFinish",
@@ -640,7 +638,7 @@ def convert_to_json(ad, cms=True, return_dict=False, reduce_data=False):
     if analysis and ad.get("JobStatus") == 2 and 'LastMatchTime' in ad:
         try:
             result["PilotRestLifeTimeMins"] = int((ad['MATCH_GLIDEIN_ToDie'] - ad['EnteredCurrentStatus'])/60)
-        except KeyError:
+        except KeyError, ValueError, TypeError:
             result["PilotRestLifeTimeMins"] = -72*60
 
     result['HasBeenTimingTuned'] = ad.get('HasBeenTimingTuned',False)
@@ -915,7 +913,11 @@ def bulk_convert_ad_data(ad, result):
             if value == 0:
                 value = None
             else:
-                value = int(value)
+                try:
+                    value = int(value)
+                except ValueError:
+                    logging.warning("Failed to convert key %s with value %s to int for a date field" % (key, repr(value)))
+                    value = None
         #elif key in date_vals:
         #    value = datetime.datetime.fromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
         if key.startswith("MATCH_EXP_JOB_"):
