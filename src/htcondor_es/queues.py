@@ -8,6 +8,7 @@ import logging
 import resource
 import traceback
 import multiprocessing
+import Queue
 
 import htcondor
 
