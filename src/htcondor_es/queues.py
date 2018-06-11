@@ -54,7 +54,12 @@ class ListenAndBunch(multiprocessing.Process):
     def run(self):
         since_last_report = 0
         while True:
-            next_batch = self.input_queue.get(timeout=time_remaining(self.starttime, positive=True))
+            try:
+                next_batch = self.input_queue.get(timeout=time_remaining(self.starttime, positive=True)-5)
+            except Queue.Empty:
+                logging.warning("Closing listener before all schedds were processed")
+                self.close()
+                return
 
             if isinstance(next_batch, basestring):
                 schedd_name = str(next_batch)
