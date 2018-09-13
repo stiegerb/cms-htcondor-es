@@ -130,10 +130,10 @@ def main():
                         dest="dry_run",
                         help=("Don't even read info, just pretend to. (Still "
                               "query the collector for the schedd's though.)"))
-    parser.add_argument("--reduce_running_data", action='store_true',
-                        dest="reduce_running_data",
+    parser.add_argument("--keep_full_queue_data", action='store_true',
+                        dest="keep_full_queue_data",
                         help="Drop all but some fields for running jobs.")
-    parser.add_argument("--bunching", default=250,
+    parser.add_argument("--bunching", default=5000,
                         type=int, dest="bunching",
                         help=("Send docs in bunches of this number "
                               "[default: %(default)d]"))
