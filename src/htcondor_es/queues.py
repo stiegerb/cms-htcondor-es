@@ -9,7 +9,6 @@ import resource
 import traceback
 import Queue
 import multiprocessing
-import Queue
 
 import htcondor
 
