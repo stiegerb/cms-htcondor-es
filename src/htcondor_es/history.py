@@ -6,7 +6,6 @@ import os
 import json
 import time
 import logging
-import datetime
 import tempfile
 import multiprocessing
 
@@ -15,10 +14,20 @@ import htcondor
 
 import htcondor_es.es
 import htcondor_es.amq
+from datetime import datetime
 from htcondor_es.utils import send_email_alert, time_remaining, TIMEOUT_MINS
 from htcondor_es.convert_to_json import convert_to_json
 from htcondor_es.convert_to_json import convert_dates_to_millisecs
 from htcondor_es.convert_to_json import unique_doc_id
+
+
+def dump_to_local_file(ad_list, local_dump):
+    with open(local_dump, 'a') as dfile:
+        data = [(id_, convert_dates_to_millisecs(dict_ad)) for \
+                 id_, dict_ad in ad_list]
+        for doc in htcondor_es.amq.make_list_data(data):
+            json.dump(doc['body'], dfile)
+            dfile.write('\n')
 
 
 def process_schedd(starttime, last_completion, checkpoint_queue, schedd_ad, args):
@@ -46,9 +55,16 @@ def process_schedd(starttime, last_completion, checkpoint_queue, schedd_ad, args
     total_upload = 0
     sent_warnings = False
     timed_out = False
+    local_dump_file = None
     if not args.read_only:
         if args.feed_es:
             es = htcondor_es.es.get_server_handle(args)
+    if args.dump_local:
+        local_dump_file = "%s_%s.dump" % (schedd_ad['Name'],
+                                          datetime.now().strftime("%Y-%m-%d-%H-%M"))
+        local_dump_file = local_dump_file.replace('@', 'AT')
+        logging.warning("Dumping to local file %s" % local_dump_file)
+
     try:
         if not args.dry_run:
             history_iter = schedd.history(history_query, [], 10000)
@@ -88,6 +104,10 @@ def process_schedd(starttime, last_completion, checkpoint_queue, schedd_ad, args
                         data_for_amq = [(id_, convert_dates_to_millisecs(dict_ad)) for \
                                         id_, dict_ad in ad_list]
                         htcondor_es.amq.post_ads(data_for_amq)
+
+                if args.dump_local:
+                    dump_to_local_file(ad_list, local_dump_file)
+
                 logging.debug("...posting %d ads from %s (process_schedd)", len(ad_list),
                               schedd_ad["Name"])
                 total_upload += time.time() - st
@@ -138,10 +158,13 @@ def process_schedd(starttime, last_completion, checkpoint_queue, schedd_ad, args
                                     id_, dict_ad in ad_list]
                     htcondor_es.amq.post_ads(data_for_amq)
 
+            if args.dump_local:
+                dump_to_local_file(ad_list, local_dump_file)
+
 
     total_time = (time.time() - my_start) / 60.
     total_upload /= 60.
-    last_formatted = datetime.datetime.fromtimestamp(last_completion).strftime("%Y-%m-%d %H:%M:%S")
+    last_formatted = datetime.fromtimestamp(last_completion).strftime("%Y-%m-%d %H:%M:%S")
     logging.warning("Schedd %-25s history: response count: %5d; last completion %s; "
                     "query time %.2f min; upload time %.2f min",
                     schedd_ad["Name"],

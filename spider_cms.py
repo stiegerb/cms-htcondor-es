@@ -115,6 +115,9 @@ def main():
     parser.add_argument("--feed_amq", action='store_true',
                         dest="feed_amq",
                         help="Feed to CERN AMQ")
+    parser.add_argument("--dump_local", action='store_true',
+                        dest="dump_local",
+                        help="Dump data into a local json file")
 
     parser.add_argument("--schedd_filter", default='',
                         type=str, dest="schedd_filter",

@@ -22,18 +22,23 @@ def get_amq_interface():
     return _amq_interface
 
 
+def make_list_data(ads):
+    interface = get_amq_interface()
+    list_data = (interface.make_notification(payload=ad, id_=id_,
+                                             type_='htcondor_job_info',
+                                             timestamp=ad['RecordTime'])
+                 for id_, ad in ads)
+    
+    return list_data
+
+
 def post_ads(ads):
     if not len(ads):
         logging.warning("No new documents found")
         return
 
     interface = get_amq_interface()
-    list_data = []
-    for id_, ad in ads:
-        list_data.append(interface.make_notification(payload=ad,
-                                                     id_=id_,
-                                                     type_='htcondor_job_info',
-                                                     timestamp=ad['RecordTime']))
+    list_data = make_list_data(ads)
 
     starttime = time.time()
     sent_data = interface.send(list_data)
